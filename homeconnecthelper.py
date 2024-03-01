@@ -39,10 +39,13 @@ False : Token not correctly refreshed
 """
 def refreshToken(self):
     url_refresh_token = BASEURL + "/security/oauth/token"
-    data_refresh_token = {"refresh_token": self.refresh_token, "grant_type": "refresh_token"}
+    data_refresh_token = {"refresh_token": self.refresh_token, "grant_type": "refresh_token","client_secret":self.clientsecret }
     response_refresh_token = requests.post(url_refresh_token,data_refresh_token,HEADER_URLENCODED)
     json_refresh_token = json.loads(response_refresh_token.text)
     response_refresh_token.close()
+    Domoticz.Log(self.clientsecret)
+    Domoticz.Log(self.refresh_token)
+    Domoticz.Log(json_refresh_token)
     self.access_token = ""
     self.refresh_token = ""
     for key, value in json_refresh_token.items():
@@ -73,7 +76,7 @@ haId : Retrieved String or None
 """
 def gethaId(self,scope,enumber):
     url_homeappliances = BASEURL + "/api/homeappliances"
-    header = {"Accept": "application/vnd.bsh.sdk.v1+json", "Authorization": "Bearer "+self.access_token}
+    header = {"Authorization": "Bearer "+self.access_token}
     response_homeappliances = requests.get(url_homeappliances, headers=header)
     Domoticz.Debug(response_homeappliances.text)
     json_homeappliances = json.loads(response_homeappliances.text)
