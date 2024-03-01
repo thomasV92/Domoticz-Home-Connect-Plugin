@@ -51,6 +51,8 @@
         </param>
         <param field="Mode3" label="Client ID" width="600px" required="true"/>
         <param field="Mode4" label="Device E-number" width="150px" required="true"/>
+        <param field="Mode5" label="client secret" width="150px" required="true"/>
+        <param field="Mode6" label="refresh token" width="150px" required="true"/>
     </params>
 </plugin>
 """
@@ -67,6 +69,8 @@ class BasePlugin:
     httpServerConns = {}
     httpClientConn = None
     clientid = ""
+    pluginInterval = 60
+    clientsecret = ""
     haId = ""
     access_token = ""
     token_expired = datetime.datetime.now()
@@ -91,7 +95,11 @@ class BasePlugin:
     def onStart(self):
         Domoticz.Log("onStart called "+Parameters["Key"])
         self.clientid = Parameters["Mode3"]
-        homeconnecthelper.connectHomeConnect(self,Parameters["Username"],Parameters["Password"],Parameters["Mode1"])
+        self.clientsecret = Parameters["Mode5"]
+        self.refresh_token = Parameters["Mode6"]
+        if homeconnecthelper.isTokenValid(self) != True:
+           homeconnecthelper.refreshToken(self)
+        #homeconnecthelper.connectHomeConnect(self,Parameters["Username"],Parameters["Password"],Parameters["Mode1"])
         self.haId = homeconnecthelper.gethaId(self,Parameters["Mode1"],Parameters["Mode4"])
         Domoticz.Log("haId: "+self.haId)
         if Parameters["Mode2"] == "True":
@@ -213,6 +221,7 @@ class BasePlugin:
         self.httpServerConn = Domoticz.Connection(Name="Home-Connect "+Parameters["Mode1"]+" WebServer", Transport="TCP/IP", Protocol="HTTP", Port=Parameters["Port"])
         self.httpServerConn.Listen()
         Domoticz.Log("Listen on Home-Connect Webserver - Port: "+str(Parameters["Port"]))
+        Domoticz.Heartbeat(self.pluginInterval)
 
     def onStop(self):
         Domoticz.Log("onStop called")
@@ -238,16 +247,16 @@ class BasePlugin:
             Domoticz.Debug(str(key_msg)+" --> "+str(value_msg))
             if key_msg == "Data":
                 a = value_msg.decode("utf-8")
-                #Domoticz.Log(a)
+                Domoticz.Log(a)
                 if a == "access_token":
-                    if homeconnecthelper.isTokenValid(self) != True:
-                        if homeconnecthelper.refreshToken(self) != True:
-                            homeconnecthelper.connectHomeConnect(self,Parameters["Username"],Parameters["Password"],Parameters["Mode1"])
+                    if homeconnecthelper.isTokenValid(self) == False:
+                        print(homeconnecthelper.isTokenValid(self))
+                        homeconnecthelper.refreshToken(self)
                     data = self.access_token
                 elif a.startswith("haId:") == True:
                     data = self.haId
                 else:
-                    #Domoticz.Log(a)
+                    Domoticz.Log(a)
                     json_items = json.loads(a)
                     deviceItems = []
                     for q,w in json_items.items():
@@ -450,6 +459,9 @@ class BasePlugin:
 
     def onHeartbeat(self):
         Domoticz.Log("onHeartbeat called")
+        #self.httpClientConn.Send({"Status":"200 OK", "Headers": {"Connection": "keep-alive", "Accept": "Content-Type: text/html; charset=UTF-8"}, "Data": self.haId})
+        #onStart()
+        
 
 global _plugin
 _plugin = BasePlugin()
