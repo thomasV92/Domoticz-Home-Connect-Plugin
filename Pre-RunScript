@@ -1,0 +1,29 @@
+Created on Fri Mar  1 11:06:45 2024
+
+@author: VERL014
+"""
+import requests
+client_idValue=''
+client_secretvalue=''
+###Starting point of registration device
+response = requests.post('https://api.home-connect.com/security/oauth/device_authorization',
+               data="client_id="+client_idValue,                         
+               headers={'content-type':'application/x-www-form-urlencoded'},
+                 )
+print(response.text)
+jsonresponse= response.json()
+device_code=jsonresponse['device_code']
+print(device_code)
+
+### now you need to registrate with the ulink
+
+
+###First autorization
+response = requests.post('https://api.home-connect.com/security/oauth/token',
+                data="grant_type=device_code&device_code="+device_code+"&client_id="+client_idValue+"&client_secret="+client_secretvalue,                         
+                headers={'content-type':'application/x-www-form-urlencoded'},
+                )
+print(response.text)
+jsonresponse= response.json()
+access_token=jsonresponse['access_token']
+print(access_token)
